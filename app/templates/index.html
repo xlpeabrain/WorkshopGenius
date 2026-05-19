@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block title %}WorkshopGenius — Build Your Workshop{% endblock %}
+
+{% block head %}
+<style>
+  .hero {
+    text-align: center;
+    padding: 2rem 0 1.5rem;
+  }
+  .hero h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--kong-blue);
+    margin-bottom: 0.5rem;
+  }
+  .hero p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+  #results { margin-top: 0; }
+
+  /* Settings card */
+  .settings-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .settings-card-header h2 { margin-bottom: 0; }
+  .settings-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  .provider-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--kong-light);
+    border: 1px solid var(--kong-teal);
+    border-radius: 99px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--kong-blue);
+  }
+  .no-cli-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 99px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #991b1b;
+  }
+  .chevron {
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+    color: var(--text-muted);
+  }
+  .chevron.open { transform: rotate(180deg); }
+  #settings-body { display: none; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+  #settings-body.open { display: block; }
+
+  .filename-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--kong-light);
+    border: 1px solid var(--kong-teal);
+    border-radius: 6px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
+    color: var(--kong-blue);
+    margin-top: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero">
+  <h1>Build Your Workshop Deck</h1>
+  <p>Describe your client's challenges and get a tailored Kong enablement presentation.</p>
+</div>
+
+<!-- Settings card -->
+<div class="card" id="settings-card">
+  <div class="settings-card-header" onclick="toggleSettings()">
+    <h2>⚙️ Settings</h2>
+    <div class="settings-toggle-row">
+      {% if is_configured %}
+        <span class="provider-badge">
+          💻 Local Session · {{ app_settings.claude_model }}
+        </span>
+      {% else %}
+        <span class="no-cli-badge">⚠ claude CLI not found</span>
+      {% endif %}
+      <span class="chevron" id="settings-chevron">▼</span>
+    </div>
+  </div>
+
+  <div id="settings-body" class="{% if not is_configured %}open{% endif %}">
+    <div id="settings-panel">
+      {% include "partials/settings.html" %}
+    </div>
+  </div>
+</div>
+
+<!-- Challenge input -->
+<div class="card">
+  <h2>Client Challenges</h2>
+  <form
+    hx-post="/analyze"
+    hx-target="#results"
+    hx-swap="innerHTML"
+    enctype="multipart/form-data"
+  >
+    <label for="challenge_text">Describe the client's technical challenges</label>
+    <textarea
+      id="challenge_text"
+      name="challenge_text"
+      placeholder="e.g. The client needs to secure their APIs with JWT and rate limiting. They want to understand Konnect's hybrid deployment model and set up observability dashboards..."
+    ></textarea>
+
+    <div class="divider">or upload a document</div>
+
+    <div class="file-upload" onclick="document.getElementById('file-input').click()">
+      <div>📄 Click to upload PDF, DOCX, or TXT</div>
+      <div class="hint">Max 10 MB · Text will be extracted automatically</div>
+      <input type="file" id="file-input" name="file" accept=".pdf,.docx,.txt"
+        onchange="updateFileLabel(this)" />
+    </div>
+    <div id="file-label" style="display:none" class="filename-badge"></div>
+
+    <div style="margin-top:1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary" id="analyze-btn">
+        <span class="htmx-indicator"><span class="spinner"></span></span>
+        <span class="btn-label">✨ Analyze &amp; Select Slides</span>
+      </button>
+      <span id="analyzing-msg" style="display:none;color:var(--text-muted);font-size:0.85rem;">
+        <span id="analyzing-step">Calling Claude CLI…</span>
+        <span id="analyzing-timer" style="margin-left:0.4rem;opacity:0.6;font-variant-numeric:tabular-nums;"></span>
+      </span>
+    </div>
+  </form>
+</div>
+
+<div id="results"></div>
+
+<script>
+  // Settings toggle
+  function toggleSettings() {
+    const body = document.getElementById('settings-body');
+    const chevron = document.getElementById('settings-chevron');
+    const open = body.classList.toggle('open');
+    chevron.classList.toggle('open', open);
+  }
+
+  // File label
+  function updateFileLabel(input) {
+    const label = document.getElementById('file-label');
+    if (input.files[0]) {
+      label.style.display = 'inline-flex';
+      label.textContent = '📎 ' + input.files[0].name;
+    } else {
+      label.style.display = 'none';
+    }
+  }
+
+  // Elapsed timer during analyze
+  let _timerInterval = null;
+  function _startTimer() {
+    const el = document.getElementById('analyzing-timer');
+    const start = Date.now();
+    el.textContent = '0s';
+    _timerInterval = setInterval(() => {
+      const s = Math.floor((Date.now() - start) / 1000);
+      el.textContent = s + 's';
+      if (s === 15) document.getElementById('analyzing-step').textContent = 'Waiting for Claude…';
+      if (s === 45) document.getElementById('analyzing-step').textContent = 'Still working (large catalog)…';
+    }, 1000);
+  }
+  function _stopTimer() {
+    clearInterval(_timerInterval);
+    _timerInterval = null;
+    document.getElementById('analyzing-timer').textContent = '';
+    document.getElementById('analyzing-step').textContent = 'Calling Claude CLI…';
+  }
+
+  // Show progress on analyze submit
+  document.addEventListener('htmx:beforeRequest', function(e) {
+    if (e.detail.elt.closest('form[hx-post="/analyze"]')) {
+      document.getElementById('analyzing-msg').style.display = 'inline-flex';
+      _startTimer();
+    }
+  });
+
+  // Hide progress when done (success or error)
+  document.addEventListener('htmx:afterRequest', function(e) {
+    if (e.detail.elt && e.detail.elt.closest && e.detail.elt.closest('form[hx-post="/analyze"]')) {
+      document.getElementById('analyzing-msg').style.display = 'none';
+      _stopTimer();
+    }
+  });
+
+  // HTMX 2.x drops non-2xx response bodies by default — swap them manually so errors are visible
+  document.addEventListener('htmx:responseError', function(e) {
+    const form = e.detail.elt && e.detail.elt.closest && e.detail.elt.closest('form[hx-post="/analyze"]');
+    if (form) {
+      document.getElementById('results').innerHTML = e.detail.xhr.responseText;
+      document.getElementById('analyzing-msg').style.display = 'none';
+      _stopTimer();
+    }
+  });
+
+  // Auto-close settings after save (HTMX settles)
+  document.addEventListener('htmx:afterSettle', function(e) {
+    if (e.detail.target && e.detail.target.id === 'settings-panel') {
+      window.location.reload();
+    }
+  });
+</script>
+{% endblock %}

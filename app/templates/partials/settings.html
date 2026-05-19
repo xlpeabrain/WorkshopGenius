@@ -1,0 +1,98 @@
+<style>
+  .settings-form { display: flex; flex-direction: column; gap: 1.1rem; }
+  .model-select {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    outline: none;
+    background: white;
+  }
+  .model-select:focus { border-color: var(--kong-teal); }
+  .save-row { display: flex; align-items: center; gap: 1rem; }
+  .saved-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--kong-green);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .cli-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.3rem 0.7rem;
+    border-radius: 99px;
+  }
+  .cli-status.ok  { background: #dcfce7; color: #166534; }
+  .cli-status.err { background: #fee2e2; color: #991b1b; }
+  .local-session-box {
+    background: var(--kong-light);
+    border: 1px solid var(--kong-teal);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .local-session-box .title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--kong-blue);
+  }
+  .local-session-box .desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+</style>
+
+<form
+  hx-post="/settings"
+  hx-target="#settings-panel"
+  hx-swap="innerHTML"
+  class="settings-form"
+>
+  <div class="local-session-box">
+    <div class="title">💻 Claude CLI (Local Session)</div>
+    <div class="desc">
+      No API key needed. WorkshopGenius calls the <code>claude</code> CLI directly,
+      using the Enterprise account you're already logged into on this machine.
+    </div>
+    <div>
+      {% if cli_available %}
+        <span class="cli-status ok">✓ claude CLI detected (v{{ cli_version }})</span>
+      {% else %}
+        <span class="cli-status err">✗ claude CLI not found on PATH — install Claude Code and ensure it is on your PATH</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    <label for="claude_model">Model</label>
+    <select name="claude_model" id="claude_model" class="model-select">
+      {% set claude_models = [
+        ("claude-sonnet-4-6",         "Claude Sonnet 4.6 (recommended)"),
+        ("claude-opus-4-7",           "Claude Opus 4.7 (most capable)"),
+        ("claude-haiku-4-5-20251001", "Claude Haiku 4.5 (fastest)")
+      ] %}
+      {% for value, label in claude_models %}
+        <option value="{{ value }}" {% if app_settings.claude_model == value %}selected{% endif %}>
+          {{ label }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="save-row">
+    <button type="submit" class="btn btn-primary">Save settings</button>
+    {% if saved %}
+      <span class="saved-badge">✓ Saved</span>
+    {% endif %}
+  </div>
+</form>

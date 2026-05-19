@@ -1,0 +1,11 @@
+.env
+catalog.json
+app_settings.json
+output/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.DS_Store
+slides/**/*.pptx

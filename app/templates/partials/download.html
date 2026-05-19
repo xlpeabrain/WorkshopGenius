@@ -1,0 +1,15 @@
+<div class="card" style="text-align:center;padding:2.5rem 2rem;">
+  <div style="font-size:3rem;margin-bottom:1rem;">🎉</div>
+  <h2 style="font-size:1.3rem;font-weight:700;color:var(--kong-blue);margin-bottom:0.5rem;">
+    Your deck is ready!
+  </h2>
+  <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.5rem;">
+    <strong>{{ workshop_title }}</strong> · {{ slide_count }} slides assembled
+  </p>
+  <a href="/download/{{ filename }}" class="btn btn-green" style="text-decoration:none;margin:0 auto;">
+    ⬇️ Download {{ filename }}
+  </a>
+  <div style="margin-top:1.5rem;">
+    <button class="btn btn-secondary" onclick="window.location.reload()">← Build another deck</button>
+  </div>
+</div>

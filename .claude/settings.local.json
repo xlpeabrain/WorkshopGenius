@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/python scripts/test_assembly.py)",
+      "Bash(pkill -f \"uvicorn app.main\")",
+      "Bash(curl -s -X POST http://localhost:8080/analyze -F 'challenge_text=Customer needs basic Kong Gateway enablement and API security guidance.')",
+      "Bash(curl -s http://localhost:8080/settings)",
+      "Bash(curl -s http://localhost:8080/)"
+    ]
+  }
+}

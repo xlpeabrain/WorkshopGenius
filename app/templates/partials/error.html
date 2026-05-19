@@ -1,0 +1,13 @@
+<div class="card" style="border-color:#fca5a5;background:#fff5f5;">
+  <h2 style="color:#dc2626;margin-bottom:0.75rem;">⚠️ Something went wrong</h2>
+  <p style="color:#7f1d1d;font-size:0.9rem;line-height:1.6;white-space:pre-wrap;word-break:break-word;">{{ error }}</p>
+  {% if detail %}
+  <details style="margin-top:0.75rem;">
+    <summary style="font-size:0.8rem;color:#991b1b;cursor:pointer;user-select:none;">Technical details</summary>
+    <pre style="margin-top:0.5rem;padding:0.75rem;background:#fff;border:1px solid #fca5a5;border-radius:6px;font-size:0.75rem;color:#7f1d1d;overflow-x:auto;white-space:pre-wrap;word-break:break-word;">{{ detail }}</pre>
+  </details>
+  {% endif %}
+  <button class="btn btn-secondary" style="margin-top:1rem;" onclick="document.getElementById('results').innerHTML=''">
+    ← Try again
+  </button>
+</div>

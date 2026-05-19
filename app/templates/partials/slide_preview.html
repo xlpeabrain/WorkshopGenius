@@ -1,0 +1,157 @@
+<style>
+  .preview-header { margin-bottom: 1.25rem; }
+  .preview-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--kong-blue); }
+  .preview-header p { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
+  .summary-box {
+    background: var(--kong-light);
+    border-left: 3px solid var(--kong-teal);
+    border-radius: 0 8px 8px 0;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: var(--kong-blue);
+    margin-bottom: 1.25rem;
+  }
+  .deck-section { margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .deck-header {
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .deck-header strong { font-size: 0.9rem; color: var(--kong-blue); flex: 1; }
+  .deck-header .rationale { font-size: 0.78rem; color: var(--text-muted); }
+  .slides-grid {
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .slide-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.55rem;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+  .slide-chip input[type=checkbox] { accent-color: var(--kong-teal); }
+  .slide-chip:has(input:checked) {
+    border-color: var(--kong-teal);
+    background: var(--kong-light);
+    color: var(--kong-blue);
+  }
+  .slide-chip .slide-num { color: var(--text-muted); font-size: 0.72rem; }
+  .generate-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+  .meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #f1f5f9;
+    border-radius: 99px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  #slide-count-display { font-weight: 600; color: var(--kong-blue); }
+</style>
+
+<div class="card">
+  <div class="preview-header">
+    <h2>🎯 Slide Selection</h2>
+    <p>Claude selected the slides below based on the client's challenges. Uncheck any slides you want to exclude.</p>
+  </div>
+
+  {% if result.summary %}
+  <div class="summary-box">{{ result.summary }}</div>
+  {% endif %}
+
+  <form
+    hx-post="/generate"
+    hx-target="#results"
+    hx-swap="innerHTML"
+    id="generate-form"
+  >
+    <!-- Workshop title (editable) -->
+    <div style="margin-bottom:1.25rem;">
+      <label for="workshop_title">Workshop title</label>
+      <input type="text" id="workshop_title" name="workshop_title"
+        value="{{ result.workshop_title or 'Kong Enablement Workshop' }}" />
+    </div>
+
+    <!-- Hidden field for selections JSON — updated by JS -->
+    <input type="hidden" name="selections_json" id="selections_json" value="" />
+
+    <!-- Per-deck slide selectors -->
+    {% for sel in result.selections %}
+    <div class="deck-section">
+      <div class="deck-header">
+        <strong>{{ sel.deck_topic }}</strong>
+        <span class="rationale">{{ sel.rationale }}</span>
+      </div>
+      <div class="slides-grid">
+        {% for slide in sel.slides_detail %}
+        <label class="slide-chip">
+          <input
+            type="checkbox"
+            class="slide-checkbox"
+            checked
+            data-deck="{{ sel.deck_id }}"
+            data-index="{{ slide.index }}"
+            onchange="updateSelections()"
+          />
+          <span class="slide-num">#{{ slide.index + 1 }}</span>
+          {{ slide.title[:45] }}{% if slide.title|length > 45 %}…{% endif %}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="generate-bar" style="margin-top:1.25rem;">
+      <button type="submit" class="btn btn-green" onclick="updateSelections()">
+        <span class="htmx-indicator"><span class="spinner" style="border-top-color:white;"></span></span>
+        <span class="btn-label">📥 Generate Deck</span>
+      </button>
+      <div class="meta-pill">🕐 ~{{ result.estimated_duration_hours }}h workshop</div>
+      <div class="meta-pill">🖼 <span id="slide-count-display">0</span> slides selected</div>
+      <button type="button" class="btn btn-secondary" onclick="window.location.reload()">← Start over</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function updateSelections() {
+    const checkboxes = document.querySelectorAll('.slide-checkbox');
+    const deckMap = {};
+    checkboxes.forEach(cb => {
+      const deck = cb.dataset.deck;
+      const idx = parseInt(cb.dataset.index);
+      if (!deckMap[deck]) deckMap[deck] = [];
+      if (cb.checked) deckMap[deck].push(idx);
+    });
+    const selections = Object.entries(deckMap)
+      .filter(([, indices]) => indices.length > 0)
+      .map(([deck_id, slide_indices]) => ({ deck_id, slide_indices }));
+    document.getElementById('selections_json').value = JSON.stringify(selections);
+
+    // Update slide count badge
+    const total = Object.values(deckMap).reduce((s, arr) => s + arr.length, 0);
+    document.getElementById('slide-count-display').textContent = total;
+  }
+
+  // Initialise on load
+  updateSelections();
+</script>

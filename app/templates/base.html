@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}WorkshopGenius{% endblock %}</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8f9fa;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+    /* Kong brand colors */
+    :root {
+      --kong-blue: #003459;
+      --kong-teal: #00a3e0;
+      --kong-green: #00c389;
+      --kong-light: #f0f7ff;
+      --border: #e2e8f0;
+      --text-muted: #64748b;
+    }
+    header {
+      background: var(--kong-blue);
+      color: white;
+      padding: 0 2rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header .logo {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    header .logo span { color: var(--kong-teal); }
+    main { max-width: 900px; margin: 2.5rem auto; padding: 0 1.5rem; }
+    .card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--kong-blue); }
+    label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.4rem; }
+    textarea, input[type=text] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    textarea:focus, input[type=text]:focus { border-color: var(--kong-teal); }
+    textarea { resize: vertical; min-height: 140px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--kong-teal); color: white; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-secondary { background: white; color: var(--kong-blue); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--kong-light); }
+    .btn-green { background: var(--kong-green); color: white; }
+    .btn-green:hover { opacity: 0.9; }
+    .divider { display: flex; align-items: center; gap: 1rem; margin: 1rem 0; color: var(--text-muted); font-size: 0.8rem; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .file-upload {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .file-upload:hover { border-color: var(--kong-teal); background: var(--kong-light); }
+    .file-upload input { display: none; }
+    .file-upload .hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+    }
+    .htmx-request .btn-primary { opacity: 0.7; pointer-events: none; }
+    .htmx-indicator { display: none; }
+    .htmx-request .htmx-indicator { display: inline-flex; }
+    .htmx-request .btn-label { display: none; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header>
+    <div class="logo">⚡ Workshop<span>Genius</span></div>
+    <span style="font-size:0.8rem;opacity:0.6;">Kong Professional Services</span>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer>
+    WorkshopGenius · Kong Professional Services ·
+    <button
+      hx-post="/admin/reindex"
+      hx-target="#reindex-status"
+      hx-swap="innerHTML"
+      style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:inherit;text-decoration:underline;"
+    >Reindex slides</button>
+    <span id="reindex-status" style="margin-left:0.5rem;"></span>
+  </footer>
+</body>
+</html>
